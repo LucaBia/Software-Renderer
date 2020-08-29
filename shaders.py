@@ -204,3 +204,4 @@ def phong (render, **kwargs):
         return r, g, b
     else:
         return 0, 0, 0
+

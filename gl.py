@@ -2,110 +2,10 @@
 
 import struct
 import numpy
-from numpy import cos, sin
+from numpy import cos, sin, tan
 from obj import Obj
+from mathLib import *
 
-
-# ----------------------
-# Librerias matematicas
-# ----------------------
-# Suma de vectores de 3 elementos
-def sum(x0, x1, y0, y1, z0, z1):
-    arr_sum = []
-    arr_sum.extend((x0 + x1, y0 + y1, z0 + z1))
-    return arr_sum
-
-# Resta de vectores de 3 elementos
-def sub(x0, x1, y0, y1, z0, z1):
-    arr_sub = []
-    arr_sub.extend((x0 - x1, y0 - y1, z0 - z1))
-    return arr_sub
-    
-# Producto cruz entre dos vectores
-def cross(v0, v1):
-    arr_cross = []
-    arr_cross.extend((v0[1] * v1[2] - v1[1] * v0[2], -(v0[0] * v1[2] - v1[0] * v0[2]), v0[0] * v1[1] - v1[0] * v0[1]))
-    return arr_cross
-
-# Producto punto (utilizado para la matriz con las coordenadas de luz)
-def dot(norm, lX, lY, lZ):
-    return ((norm[0] * lX) + (norm[1] * lY) + (norm[2] * lZ))
-
-# Calculo de la normal de un vector
-def norm(v0):
-    if (v0 == 0):
-        arr0_norm = []
-        arr0_norm.extend((0,0,0))
-        return arr0_norm
-
-    return((v0[0]**2 + v0[1]**2 + v0[2]**2)**(1/2))
-
-# Division vector con normal
-def div(v0, norm):
-    if (norm == 0):
-        arr0_norm = []
-        arr0_norm.extend((0,0,0))
-        return arr0_norm
-    else:
-        arr_div = []
-        arr_div.extend((v0[0] / norm, v0[1] / norm, v0[2] / norm))
-        return arr_div
-
-# Crea una matriz llena de ceros
-def zeros_matrix(rows, cols):
-    m = []
-    while len(m) < rows:
-        m.append([])
-        while len(m[-1]) < cols:
-            m[-1].append(0.0)
-
-    return m
-
-# Multiplicacion de dos matrices
-def matrix_multiply(m1, m2):
-    rowsM1 = len(m1)
-    colsM1 = len(m1[0])
-    colsM2 = len(m2[0])
- 
-    c = zeros_matrix(rowsM1, colsM2)
-    for i in range(rowsM1):
-        for j in range(colsM2):
-            total = 0
-            for k in range(colsM1):
-                total += m1[i][k] * m2[k][j]
-            c[i][j] = total
- 
-    return c
-
-# Multiplicacion de un vector con una matriz
-def multiplyVM(v, m):
-    result = []
-    for i in range(len(m)):
-        total = 0
-        for j in range(len(v)):
-            total += m[i][j] * v[j]
-        result.append(total)
-    return result  
-
-def degToRad(number):
-    pi = 3.141592653589793
-    return number * (pi/180)
-
-def baryCoords(Ax, Bx, Cx, Ay, By, Cy, Px, Py):
-    # u es para la A, v es para B, w para C
-    try:
-        u = ( ((By - Cy)*(Px - Cx) + (Cx - Bx)*(Py - Cy) ) /
-              ((By - Cy)*(Ax - Cx) + (Cx - Bx)*(Ay - Cy)) )
-
-        v = ( ((Cy - Ay)*(Px - Cx) + (Ax - Cx)*(Py - Cy) ) /
-              ((By - Cy)*(Ax - Cx) + (Cx - Bx)*(Ay - Cy)) )
-
-        w = 1 - u - v
-    except:
-        return -1, -1, -1
-
-    return u, v, w
-# -------------------------------------------------------------
 
 
 # Format characters
@@ -129,23 +29,54 @@ def color(r, g, b):
 BLACK = color(0,0,0)
 WHITE = color(1,1,1)
 LIGHT_GREEN = color(0.5,1,0)
+pi = 3.141592653589793
 
 
 class Render(object):
     # glInit()
     def __init__(self, width, height):
-        self.glCreateWindow(width, height)
-        self.bitmap_color = BLACK
         self.pixel_color = WHITE
-        self.active_texture = None
-        self.active_shader = None
+        self.bitmap_color = BLACK
+        self.glCreateWindow(width, height)
+
         self.lightX, self.lightY, self.lightZ = 0, 0, 1
-        self.glClear()
+        self.light = (self.lightX, self.lightY, self.lightZ)
+        self.active_texture = None
+
+        self.active_normalMap = None
+
+        self.active_shader = None
+
+        self.createViewMatrix()
+        self.createProjectionMatrix()
+        # self.glClear()
+
+    # def lookAt(self, eye, camPosition = (0,0,0)):
+    #     forward = np.subtract(camPosition, eye)
+    #     forward = forward / np.linalg.norm(forward)
+
+    #     right = cross((0,1,0), forward)
+    #     right = right / np.linalg.norm(right)
+
+    #     up = cross(forward, right)
+    #     up = up / np.linalg.norm(up)
+
+    #     camMatrix = [
+    #         [right[0], up[0], forward[0], camPosition.x],
+    #         [right[1], up[1], forward[1], camPosition.y],
+    #         [right[2], up[2], forward[2], camPosition.z],
+    #         [0,0,0,1]
+    #     ]
+
+    #     self.viewMatrix = inverse(camMatrix)
+
+    def createViewMatrix(self, camPosition = (0, 0, 0), camRotation = (0, 0, 0)):
+        camMatrix = self.createModelMatrix(translate = camPosition, rotate = camRotation)
+        self.viewMatrix = inverse(camMatrix)
 
     # Llena el mapa de bits con un solo color
     def glClear(self):
         self.pixels = [[self.bitmap_color for x in range(self.width)] for y in range(self.height)]
-        #Z - buffer, depthbuffer, buffer de profudidad
         self.zbuffer = [ [ -float('inf') for x in range(self.width)] for y in range(self.height) ]
     
     # Cambia el color con el que funciona glClear
@@ -159,6 +90,8 @@ class Render(object):
     def glCreateWindow(self, width, height):
         self.width = width
         self.height = height
+        self.glClear()
+        self.glViewPort(0, 0, width, height)
     
     # Define el area de la imagen en donde se puede dibujar
     def glViewPort(self, x, y, width, height):
@@ -166,6 +99,24 @@ class Render(object):
         self.viewPortHeight = height
         self.viewPortX = x
         self.viewPortY = y
+
+        self.viewportMatrix = [
+                [width/2, 0, 0, x + width/2],
+                [0, height/2, 0, y + height/2],
+                [0, 0, 0.5, 0.5],
+                [0, 0, 0, 1]
+            ]
+
+    def createProjectionMatrix(self, n = 0.1, f = 1000, fov = 60):
+        t = tan((fov * pi / 180) / 2) * n
+        r = t * self.viewPortWidth / self.viewPortHeight
+
+        self.projectionMatrix = [
+            [n / r, 0, 0, 0],
+            [0, n / t, 0, 0],
+            [0, 0, -(f+n)/(f-n), -(2*f*n)/(f-n)],
+            [0, 0, -1, 0]
+        ]
 
     # Cambia el color de un punto en la pantalla
     def glVertex(self, x, y):
@@ -374,6 +325,31 @@ class Render(object):
     
         return transVertex
 
+    def camTransform(self, vertex):
+        augVertex = ([vertex[0]], [vertex[1]], [vertex[2]], [1])
+        # transVertex = self.viewportMatrix @ self.projectionMatrix @ self.viewMatrix @ augVertex
+        transVertex1 = matrix_multiply(self.viewportMatrix, self.projectionMatrix)
+        transVertex2 = matrix_multiply(transVertex1, self.viewMatrix)
+        transVertex = multiplyVM(augVertex, transVertex2)
+
+        # transVertex = transVertex.tolist()[0]
+
+        transVertex = (transVertex[0] / transVertex[3],
+                       transVertex[1] / transVertex[3],
+                       transVertex[2] / transVertex[3])
+        print(transVertex)
+        return transVertex
+
+    def dirTransform(self, vertex, vMatrix):
+        augVertex = (vertex[0], vertex[1], vertex[2], 0)
+        transVertex = multiplyVM(augVertex, vMatrix)
+        # transVertex = transVertex.tolist()[0]
+        transVertex = (transVertex[0],
+                       transVertex[1],
+                       transVertex[2])
+
+        return transVertex
+
     def createModelMatrix(self, translate=(0,0,0), scale=(1,1,1), rotate=(0,0,0)):
         # Matriz de traslacion
         # [1, 0, 0, Tx]
@@ -466,6 +442,10 @@ class Render(object):
             v1 = self.transform(v1, modelMatrix)
             v2 = self.transform(v2, modelMatrix)
 
+            # v0 = self.camTransform(v0)
+            # v1 = self.camTransform(v1)
+            # v2 = self.camTransform(v2)
+
             x0, x1, x2 = int(v0[0]), int(v1[0]), int(v2[0])
             y0, y1, y2 = int(v0[1]), int(v1[1]), int(v2[1])
             z0, z1, z2 = int(v0[2]), int(v1[2]), int(v2[2])
@@ -474,6 +454,7 @@ class Render(object):
             if vertCount > 3: 
                 v3 = model.vertices[face[3][0] - 1]
                 v3 = self.transform(v3, modelMatrix)
+                # v3 = self.camTransform(v3)
 
                 x3 = int(v3[0])
                 y3 = int(v3[1])
@@ -482,35 +463,29 @@ class Render(object):
 
 
             try:
-                if self.active_texture:
-                    vt0 = model.texcoords[face[0][1] - 1]
-                    vt1 = model.texcoords[face[1][1] - 1]
-                    vt2 = model.texcoords[face[2][1] - 1]
-                    vt0X, vt0Y = vt0[0], vt0[1]
-                    vt1X, vt1Y = vt1[0], vt1[1]
-                    vt2X, vt2Y = vt2[0], vt2[1]
+                vt0 = model.texcoords[face[0][1] - 1]
+                vt1 = model.texcoords[face[1][1] - 1]
+                vt2 = model.texcoords[face[2][1] - 1]
+                vt0X, vt0Y = vt0[0], vt0[1]
+                vt1X, vt1Y = vt1[0], vt1[1]
+                vt2X, vt2Y = vt2[0], vt2[1]
 
-                    if vertCount > 3:
-                        vt3 = model.texcoords[face[3][1] - 1]
-                        vt3X, vt3Y = vt3[0], vt3[1]
-                else:
-                    vt0X, vt0Y = 0, 0
-                    vt1X, vt1Y = 0, 0
-                    vt2X, vt2Y = 0, 0
-                    vt3X, vt3Y = 0, 0
+                if vertCount > 3:
+                    vt3 = model.texcoords[face[3][1] - 1]
+                    vt3X, vt3Y = vt3[0], vt3[1]
 
                 # Normales de los vertices del obj
                 vn0 = model.normals[face[0][2] - 1]
                 vn1 = model.normals[face[1][2] - 1]
                 vn2 = model.normals[face[2][2] - 1]
 
-                vn0 = self.transform(vn0, rotationMatrix)
-                vn1 = self.transform(vn1, rotationMatrix)
-                vn2 = self.transform(vn2, rotationMatrix)
+                vn0 = self.dirTransform(vn0, rotationMatrix)
+                vn1 = self.dirTransform(vn1, rotationMatrix)
+                vn2 = self.dirTransform(vn2, rotationMatrix)
 
                 if vertCount > 3:
                     vn3 = model.normals[face[3][2] - 1]
-                    vn3 = self.transform(vn3, rotationMatrix)
+                    vn3 = self.dirTransform(vn3, rotationMatrix)
 
             except:
                 pass
@@ -519,15 +494,46 @@ class Render(object):
             self.triangle_bc(x0, x1, x2, y0, y1, y2, z0, z1, z2, vt0X, vt1X, vt2X, vt0Y, vt1Y, vt2Y, normals = (vn0, vn1, vn2))
             if vertCount > 3:
                 self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0X, vt2X, vt3X, vt0Y, vt2Y, vt3Y, normals = (vn0, vn2, vn3))
+            # self.triangle_bc(v0, v1, v2, texcoords = (vt0, vt1, vt2), normals = (vn0, vn1, vn2), verts = (A, B, C))
+            # if vertCount > 3:
+            #     self.triangle_bc(v0, v2, v3, texcoords = (vt0, vt2, vt3), normals = (vn0, vn2, vn3), verts = (A, C, D))
                  
-                
 
      #Barycentric Coordinates
+    # def triangle_bc(self, A, B, C, texcoords = (), normals = (), verts = (), _color = None):
     def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, taX, tbX, tcX, taY, tbY, tcY, normals = (), _color = None):
+        # minX = round(min(A[0], B[0], C[0]))
+        # minY = round(min(A[1], B[1], C[1]))
+        # maxX = round(max(A[0], B[0], C[0]))
+        # maxY = round(max(A[1], B[1], C[1]))
         minX = round(min(Ax, Bx, Cx))
         minY = round(min(Ay, By, Cy))
         maxX = round(max(Ax, Bx, Cx))
         maxY = round(max(Ay, By, Cy))
+
+        # for x in range(minX, maxX + 1):
+        #     for y in range(minY, maxY + 1):
+        #         if x >= self.width or x < 0 or y >= self.height or y < 0:
+        #             continue
+
+        #         u, v, w = baryCoords(A, B, C, (x, y))
+
+        #         if u >= 0 and v >= 0 and w >= 0:
+        #             z = A[2] * u + B[2] * v + C[2] * w
+        #             if z > self.zbuffer[y][x]:
+                        
+        #                 r, g, b = self.active_shader(
+        #                     self,
+        #                     verts = verts,
+        #                     baryCoords = (u, v, w),
+        #                     texCoords = texcoords,
+        #                     normals = normals,
+        #                     color = _color or self.pixel_color)
+        #             else:
+        #                 b, g, r = _color or self.pixel_color
+
+        #             self.glVertexCoord(x, y, color(r, g, b))
+        #             self.zbuffer[y][x] = z
 
         for x in range(minX, maxX + 1):
             for y in range(minY, maxY + 1):

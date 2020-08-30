@@ -1,5 +1,8 @@
-from gl import dot
+# from gl import *
+from mathLib import *
 import random
+import numpy as np
+from numpy import matrix
 
 
 # http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/toon-shader-version-ii/
@@ -204,4 +207,94 @@ def phong (render, **kwargs):
         return r, g, b
     else:
         return 0, 0, 0
+
+
+def normalMap(render, **kwargs):
+    Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz = kwargs['verts']
+    u, v, w = kwargs['baryCoords']
+    taX, tbX, tcX, taY, tbY, tcY = kwargs['texCoords']
+    na, nb, nc = kwargs['normals']
+    b, g ,r = kwargs['color']
+
+    A = (Ax, Ay, Az)
+    B = (Bx, By, Bz)
+    C = (Cx, Cy, Cz)
+
+    ta = (taX, taY)
+    tb = (tbX, tbY)
+    tc = (tcX, tcY)
+
+    b /= 255
+    g /= 255
+    r /= 255
+
+    tx = taX * u + tbX * v + tcX * w
+    ty = taY * u + tbY * v + tcY * w
+
+    if render.active_texture:
+        texColor = render.active_texture.getColor(tx, ty)
+        b *= texColor[0] / 255
+        g *= texColor[1] / 255
+        r *= texColor[2] / 255
+
+    nx = na[0] * u + nb[0] * v + nc[0] * w
+    ny = na[1] * u + nb[1] * v + nc[1] * w
+    nz = na[2] * u + nb[2] * v + nc[2] * w
+    normal = (nx, ny, nz)
+
+    if render.active_normalMap:
+        texNormal = render.active_normalMap.getColor(tx, ty)
+        texNormal = [ (texNormal[2] / 255) * 2 - 1,
+                      (texNormal[1] / 255) * 2 - 1,
+                      (texNormal[0] / 255) * 2 - 1]
+
+        texNormal = texNormal / np.linalg.norm(texNormal)
+
+        # edge1 = B - A
+        edge1 = sub(B[0], A[0], B[1], A[1], B[2], A[2])
+        # edge2 = C - A
+        edge2 = sub(C[0], A[0], C[1], A[1], C[2], A[2])
+        # tb - ta 
+        deltaUV1 = sub2(tb[0], ta[0], tb[1], ta[1])
+        # tc - ta
+        deltaUV2 = sub2(tc[0], ta[0], tc[1], ta[1])
+
+        tangent = [0,0,0]
+        f = 1 / (deltaUV1[0] * deltaUV2[1] - deltaUV2[0] * deltaUV1[1])
+        tangent[0] = f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0])
+        tangent[1] = f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1])
+        tangent[2] = f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2])
+        tangent = tangent / np.linalg.norm(tangent)
+        tangent = div(tangent, frobeniusNorm(tangent))
+        tangent = subVectors(tangent, multiply(dot(tangent, normal[0], normal[1], normal[2]), normal))
+        tangent = tangent / frobeniusNorm(tangent)
+
+        bitangent = cross(normal, tangent)
+        bitangent = bitangent / frobeniusNorm(bitangent)
+
+        #para convertir de espacio global a espacio tangente
+        tangentMatrix = matrix([[tangent[0],bitangent[0],normal[0]],
+                                [tangent[1],bitangent[1],normal[1]],
+                                [tangent[2],bitangent[2],normal[2]]])
+
+        light = render.light
+        light = tangentMatrix @ light
+
+        light = light.tolist()[0]
+        light = div(light, frobeniusNorm(light))
+
+        intensity = dot(texNormal, light[0], light[1], light[2])
+    else:
+        intensity = dot(normal, render.light[0], render.light[1], render.light[2])
+
+    b *= intensity
+    g *= intensity
+    r *= intensity
+
+    if intensity > 0:
+        return r, g, b
+    else:
+        return 0,0,0
+
+
 

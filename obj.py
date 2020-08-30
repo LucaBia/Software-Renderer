@@ -36,7 +36,7 @@ class Obj(object):
                     elif prefix == 'f': #Cara del poligono
                         self.faces.append([list(map(int,vert.split('/'))) for vert in value.split(' ')])
 
-            print(line)
+            # print(line)
 
 # Clase para colocar una textura al obj en formato bmp
 class Texture(object):

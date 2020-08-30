@@ -49,26 +49,25 @@ class Render(object):
 
         self.createViewMatrix()
         self.createProjectionMatrix()
-        # self.glClear()
 
-    # def lookAt(self, eye, camPosition = (0,0,0)):
-    #     forward = np.subtract(camPosition, eye)
-    #     forward = forward / np.linalg.norm(forward)
+    def lookAt(self, eye, camPosition = (0,0,0)):
+        forward = sub(camPosition[0], eye[0], camPosition[1], eye[1], camPosition[2], eye[2])
+        forward = div(forward, frobeniusNorm(forward))
 
-    #     right = cross((0,1,0), forward)
-    #     right = right / np.linalg.norm(right)
+        right = cross((0,1,0), forward)
+        right = div(right, frobeniusNorm(right))
 
-    #     up = cross(forward, right)
-    #     up = up / np.linalg.norm(up)
+        up = cross(forward, right)
+        up = div(up, frobeniusNorm(up))
 
-    #     camMatrix = [
-    #         [right[0], up[0], forward[0], camPosition.x],
-    #         [right[1], up[1], forward[1], camPosition.y],
-    #         [right[2], up[2], forward[2], camPosition.z],
-    #         [0,0,0,1]
-    #     ]
+        camMatrix = [
+            [right[0], up[0], forward[0], camPosition[0]],
+            [right[1], up[1], forward[1], camPosition[1]],
+            [right[2], up[2], forward[2], camPosition[2]],
+            [0,0,0,1]
+        ]
 
-    #     self.viewMatrix = inverse(camMatrix)
+        self.viewMatrix = inverse(camMatrix)
 
     def createViewMatrix(self, camPosition = (0, 0, 0), camRotation = (0, 0, 0)):
         camMatrix = self.createModelMatrix(translate = camPosition, rotate = camRotation)

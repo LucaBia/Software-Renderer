@@ -1,8 +1,6 @@
 # from gl import *
 from mathLib import *
 import random
-import numpy as np
-from numpy import matrix
 
 
 # http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/toon-shader-version-ii/
@@ -248,7 +246,7 @@ def normalMap(render, **kwargs):
                       (texNormal[1] / 255) * 2 - 1,
                       (texNormal[0] / 255) * 2 - 1]
 
-        texNormal = texNormal / np.linalg.norm(texNormal)
+        texNormal = div(texNormal, frobeniusNorm(texNormal))
 
         # edge1 = B - A
         edge1 = sub(B[0], A[0], B[1], A[1], B[2], A[2])
@@ -264,7 +262,8 @@ def normalMap(render, **kwargs):
         tangent[0] = f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0])
         tangent[1] = f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1])
         tangent[2] = f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2])
-        tangent = tangent / np.linalg.norm(tangent)
+        # tangent = tangent / np.linalg.norm(tangent)ç
+        tangent = div(tangent, frobeniusNorm(tangent))
         tangent = div(tangent, frobeniusNorm(tangent))
         tangent = subVectors(tangent, multiply(dot(tangent, normal[0], normal[1], normal[2]), normal))
         tangent = tangent / frobeniusNorm(tangent)
@@ -273,14 +272,17 @@ def normalMap(render, **kwargs):
         bitangent = bitangent / frobeniusNorm(bitangent)
 
         #para convertir de espacio global a espacio tangente
-        tangentMatrix = matrix([[tangent[0],bitangent[0],normal[0]],
-                                [tangent[1],bitangent[1],normal[1]],
-                                [tangent[2],bitangent[2],normal[2]]])
+        tangentMatrix = [
+            [tangent[0],bitangent[0],normal[0]],
+            [tangent[1],bitangent[1],normal[1]],
+            [tangent[2],bitangent[2],normal[2]]
+        ]
 
         light = render.light
-        light = tangentMatrix @ light
+        # light = tangentMatrix @ light
+        light = multiplyVM(light, tangentMatrix)
 
-        light = light.tolist()[0]
+        # light = light.tolist()[0]
         light = div(light, frobeniusNorm(light))
 
         intensity = dot(texNormal, light[0], light[1], light[2])

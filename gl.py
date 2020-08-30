@@ -326,13 +326,11 @@ class Render(object):
         return transVertex
 
     def camTransform(self, vertex):
-        augVertex = ([vertex[0]], [vertex[1]], [vertex[2]], [1])
-        # transVertex = self.viewportMatrix @ self.projectionMatrix @ self.viewMatrix @ augVertex
+        augVertex = (vertex[0], vertex[1], vertex[2], 1)
+
         transVertex1 = matrix_multiply(self.viewportMatrix, self.projectionMatrix)
         transVertex2 = matrix_multiply(transVertex1, self.viewMatrix)
         transVertex = multiplyVM(augVertex, transVertex2)
-
-        # transVertex = transVertex.tolist()[0]
 
         transVertex = (transVertex[0] / transVertex[3],
                        transVertex[1] / transVertex[3],
@@ -343,7 +341,6 @@ class Render(object):
     def dirTransform(self, vertex, vMatrix):
         augVertex = (vertex[0], vertex[1], vertex[2], 0)
         transVertex = multiplyVM(augVertex, vMatrix)
-        # transVertex = transVertex.tolist()[0]
         transVertex = (transVertex[0],
                        transVertex[1],
                        transVertex[2])
@@ -441,24 +438,29 @@ class Render(object):
             v0 = self.transform(v0, modelMatrix)
             v1 = self.transform(v1, modelMatrix)
             v2 = self.transform(v2, modelMatrix)
-
-            # v0 = self.camTransform(v0)
-            # v1 = self.camTransform(v1)
-            # v2 = self.camTransform(v2)
-
+            # A = v0
+            # B = v1
+            # C = v2
             x0, x1, x2 = int(v0[0]), int(v1[0]), int(v2[0])
             y0, y1, y2 = int(v0[1]), int(v1[1]), int(v2[1])
             z0, z1, z2 = int(v0[2]), int(v1[2]), int(v2[2])
+
+            v0 = self.camTransform(v0)
+            v1 = self.camTransform(v1)
+            v2 = self.camTransform(v2)
+
 
             # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
             if vertCount > 3: 
                 v3 = model.vertices[face[3][0] - 1]
                 v3 = self.transform(v3, modelMatrix)
-                # v3 = self.camTransform(v3)
-
+                # D = v3
                 x3 = int(v3[0])
                 y3 = int(v3[1])
                 z3 = int(v3[2])
+
+                v3 = self.camTransform(v3)
+
 
 
 
@@ -506,10 +508,10 @@ class Render(object):
         # minY = round(min(A[1], B[1], C[1]))
         # maxX = round(max(A[0], B[0], C[0]))
         # maxY = round(max(A[1], B[1], C[1]))
-        minX = round(min(Ax, Bx, Cx))
-        minY = round(min(Ay, By, Cy))
-        maxX = round(max(Ax, Bx, Cx))
-        maxY = round(max(Ay, By, Cy))
+        minX = int(min(Ax, Bx, Cx))
+        minY = int(min(Ay, By, Cy))
+        maxX = int(max(Ax, Bx, Cx))
+        maxY = int(max(Ay, By, Cy))
 
         # for x in range(minX, maxX + 1):
         #     for y in range(minY, maxY + 1):
@@ -540,7 +542,7 @@ class Render(object):
                 if x >= self.width or x < 0 or y >= self.height or y < 0:
                     continue
 
-                u, v, w = baryCoords(Ax, Bx, Cx, Ay, By, Cy, x,y)
+                u, v, w = baryCoords(Ax, Bx, Cx, Ay, By, Cy, x, y)
 
                 if u >= 0 and v >= 0 and w >= 0:
                     z = Az * u + Bz * v + Cz * w

@@ -1,7 +1,7 @@
-
 # ----------------------
 # Librerias matematicas
 # ----------------------
+
 # Suma de vectores de 3 elementos
 def sum(x0, x1, y0, y1, z0, z1):
     arr_sum = []
@@ -14,6 +14,7 @@ def sub(x0, x1, y0, y1, z0, z1):
     arr_sub.extend((x0 - x1, y0 - y1, z0 - z1))
     return arr_sub
 
+# Resta de vectores de 2 elementos
 def sub2(x0, x1, y0, y1):
     arr_sub = []
     arr_sub.extend((x0 - x1, y0 - y1))
@@ -43,8 +44,9 @@ def norm(v0):
 
     return((v0[0]**2 + v0[1]**2 + v0[2]**2)**(1/2))
 
-def frobeniusNorm(norm):
-        return((norm[0]**2+norm[1]**2+norm[2]**2)**(1/2))
+# Igual que la anterior, calculo de la normal pero sin validacion
+def frobeniusNorm(v0):
+        return((v0[0]**2 + v0[1]**2 + v0[2]**2)**(1/2))
 
 # Division vector con normal
 def div(v0, norm):
@@ -93,10 +95,12 @@ def multiplyVM(v, m):
         result.append(total)
     return result  
 
+# Grados a radianes
 def degToRad(number):
     pi = 3.141592653589793
     return number * (pi/180)
 
+# Funciones para la inversa 
 def eliminate(r1, r2, col, target=0):
     fac = (r2[col]-target) / r1[col]
     for i in range(len(r2)):
@@ -110,7 +114,6 @@ def gauss(a):
                     a[i], a[j] = a[j], a[i]
                     break
             else:
-                print("MATRIX NOT INVERTIBLE")
                 return -1
         for j in range(i+1, len(a)):
             eliminate(a[i], a[j], i)
@@ -131,32 +134,16 @@ def inverse(a):
     for i in range(len(tmp)):
         ret.append(tmp[i][len(tmp[i])//2:])
     return ret
+# ---------------------------------------------
 
+# Multiplicacion dos vectores de 3 elementos
 def multiply(dotNumber, normal):
     arrMul = []
     arrMul.extend((dotNumber * normal[0], dotNumber * normal[1], dotNumber * normal[2]))
     return arrMul
 
 
-
-
-# def baryCoords(A, B, C, P):
-#     # u es para la A, v es para B, w para C
-#     try:
-#         u = ( ((B[1] - C[1])*(P[0] - C[0]) + (C[0] - B[0])*(P[1] - C[1]) ) /
-#               ((B[1] - C[1])*(A[0] - C[0]) + (C[0] - B[0])*(A[1] - C[1])) )
-
-#         v = ( ((C[1] - A[1])*(P[0] - C[0]) + (A[0] - C[0])*(P[1] - C[1]) ) /
-#               ((B[1] - C[1])*(A[0] - C[0]) + (C[0] - B[0])*(A[1] - C[1])) )
-
-#         w = 1 - u - v
-#     except:
-#         return -1, -1, -1
-
-#     return u, v, w
-
 def baryCoords(Ax, Bx, Cx, Ay, By, Cy, Px, Py):
-    # u es para la A, v es para B, w para C
     try:
         u = ( ((By - Cy)*(Px - Cx) + (Cx - Bx)*(Py - Cy) ) /
               ((By - Cy)*(Ax - Cx) + (Cx - Bx)*(Ay - Cy)) )
@@ -169,4 +156,3 @@ def baryCoords(Ax, Bx, Cx, Ay, By, Cy, Px, Py):
         return -1, -1, -1
 
     return u, v, w
-# -------------------------------------------------------------

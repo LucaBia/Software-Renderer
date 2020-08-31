@@ -334,7 +334,7 @@ class Render(object):
         transVertex = (transVertex[0] / transVertex[3],
                        transVertex[1] / transVertex[3],
                        transVertex[2] / transVertex[3])
-        print(transVertex)
+        # print(transVertex)
         return transVertex
 
     def dirTransform(self, vertex, vMatrix):
@@ -437,12 +437,13 @@ class Render(object):
             v0 = self.transform(v0, modelMatrix)
             v1 = self.transform(v1, modelMatrix)
             v2 = self.transform(v2, modelMatrix)
-            # A = v0
-            # B = v1
-            # C = v2
-            x0, x1, x2 = int(v0[0]), int(v1[0]), int(v2[0])
-            y0, y1, y2 = int(v0[1]), int(v1[1]), int(v2[1])
-            z0, z1, z2 = int(v0[2]), int(v1[2]), int(v2[2])
+
+            Ax, Ay, Az = int(v0[0]), int(v1[0]), int(v2[0])
+            A = (Ax, Ay, Az)
+            Bx, By, Bz = int(v0[1]), int(v1[1]), int(v2[1])
+            B = (Bx, By, Bz) 
+            Cx, Cy, Cz = int(v0[2]), int(v1[2]), int(v2[2])
+            C = (Cx, Cy, Cz)
 
             v0 = self.camTransform(v0)
             v1 = self.camTransform(v1)
@@ -454,14 +455,14 @@ class Render(object):
                 v3 = model.vertices[face[3][0] - 1]
                 v3 = self.transform(v3, modelMatrix)
                 # D = v3
-                x3 = int(v3[0])
-                y3 = int(v3[1])
-                z3 = int(v3[2])
+                Aw = int(v3[0])
+                Bw = int(v3[1])
+                Cw = int(v3[2])
+                A = (Ax, Ay, Aw)
+                B = (Bx, By, Bw)
+                C = (Cx, Cy, Cw)
 
                 v3 = self.camTransform(v3)
-
-
-
 
             try:
                 vt0 = model.texcoords[face[0][1] - 1]
@@ -492,49 +493,18 @@ class Render(object):
                 pass
 
 
-            self.triangle_bc(x0, x1, x2, y0, y1, y2, z0, z1, z2, vt0X, vt1X, vt2X, vt0Y, vt1Y, vt2Y, normals = (vn0, vn1, vn2))
+            self.triangle_bc(Ax, Ay, Az, Bx, By, Bz, Cx, Cy, Cz, vt0X, vt1X, vt2X, vt0Y, vt1Y, vt2Y, verts = (A, B, C), normals = (vn0, vn1, vn2))
             if vertCount > 3:
-                self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0X, vt2X, vt3X, vt0Y, vt2Y, vt3Y, normals = (vn0, vn2, vn3))
-            # self.triangle_bc(v0, v1, v2, texcoords = (vt0, vt1, vt2), normals = (vn0, vn1, vn2), verts = (A, B, C))
-            # if vertCount > 3:
-            #     self.triangle_bc(v0, v2, v3, texcoords = (vt0, vt2, vt3), normals = (vn0, vn2, vn3), verts = (A, C, D))
+                self.triangle_bc(Ax, Az, Aw, Bx, Bz, Bw, Cx, Cz, Cw, vt0X, vt2X, vt3X, vt0Y, vt2Y, vt3Y, verts = (A, B, W), normals = (vn0, vn2, vn3))
                  
 
      #Barycentric Coordinates
-    # def triangle_bc(self, A, B, C, texcoords = (), normals = (), verts = (), _color = None):
-    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, taX, tbX, tcX, taY, tbY, tcY, normals = (), _color = None):
-        # minX = round(min(A[0], B[0], C[0]))
-        # minY = round(min(A[1], B[1], C[1]))
-        # maxX = round(max(A[0], B[0], C[0]))
-        # maxY = round(max(A[1], B[1], C[1]))
+    
+    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, taX, tbX, tcX, taY, tbY, tcY, normals = (), verts = (), _color = None):
         minX = int(min(Ax, Bx, Cx))
         minY = int(min(Ay, By, Cy))
         maxX = int(max(Ax, Bx, Cx))
         maxY = int(max(Ay, By, Cy))
-
-        # for x in range(minX, maxX + 1):
-        #     for y in range(minY, maxY + 1):
-        #         if x >= self.width or x < 0 or y >= self.height or y < 0:
-        #             continue
-
-        #         u, v, w = baryCoords(A, B, C, (x, y))
-
-        #         if u >= 0 and v >= 0 and w >= 0:
-        #             z = A[2] * u + B[2] * v + C[2] * w
-        #             if z > self.zbuffer[y][x]:
-                        
-        #                 r, g, b = self.active_shader(
-        #                     self,
-        #                     verts = verts,
-        #                     baryCoords = (u, v, w),
-        #                     texCoords = texcoords,
-        #                     normals = normals,
-        #                     color = _color or self.pixel_color)
-        #             else:
-        #                 b, g, r = _color or self.pixel_color
-
-        #             self.glVertexCoord(x, y, color(r, g, b))
-        #             self.zbuffer[y][x] = z
 
         for x in range(minX, maxX + 1):
             for y in range(minY, maxY + 1):
@@ -550,6 +520,7 @@ class Render(object):
                         r, g, b = self.active_shader(
                             self,
                             verts = (Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz),
+                            # verts = verts,
                             baryCoords = (u, v, w),
                             texCoords = (taX, tbX, tcX, taY, tbY, tcY),
                             normals = normals,

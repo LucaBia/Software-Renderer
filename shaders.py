@@ -166,7 +166,84 @@ def static(render, **kwargs):
     else:
         return 0,0,0
 
+def sand(render, **kwargs):
+    u, v, w = kwargs['baryCoords']
+    tax, tbx, tcx, tay, tby, tcy = kwargs['texCoords']
+    na, nb, nc = kwargs['normals']
+    b, g, r = kwargs['color']
 
+    b /= 255
+    g /= 255
+    r /= 255
+
+    if render.active_texture:
+        tx = tax * u + tbx * v + tcx * w
+        ty = tay * u + tby * v + tcy * w
+        texColor = render.active_texture.getColor(tx, ty)
+        b *= texColor[0] / 255
+        g *= texColor[1] / 255
+        r *= texColor[2] / 255
+
+    nx = na[0] * u + nb[0] * v + nc[0] * w
+    ny = na[1] * u + nb[1] * v + nc[1] * w
+    nz = na[2] * u + nb[2] * v + nc[2] * w
+
+    normal = (nx, ny, nz)
+
+    intensity = dot(normal, render.lightX,render.lightY,render.lightZ )
+
+    b *= intensity
+    g *= intensity
+    r *= intensity
+ 
+    randomNumber = random.randint(1, 5)
+
+    if (intensity > 0 and randomNumber >= 2):
+        return r, g, b
+    elif (intensity > 0 and randomNumber == 1):
+        # Field sand color
+        return 0.501, 0.314, 0.235
+    else:
+        return 0.250, 0.145, 0.118
+
+def moss(render, **kwargs):
+    u, v, w = kwargs['baryCoords']
+    tax, tbx, tcx, tay, tby, tcy = kwargs['texCoords']
+    na, nb, nc = kwargs['normals']
+    b, g, r = kwargs['color']
+
+    b /= 255
+    g /= 255
+    r /= 255
+
+    if render.active_texture:
+        tx = tax * u + tbx * v + tcx * w
+        ty = tay * u + tby * v + tcy * w
+        texColor = render.active_texture.getColor(tx, ty)
+        b *= texColor[0] / 255
+        g *= texColor[1] / 255
+        r *= texColor[2] / 255
+
+    nx = na[0] * u + nb[0] * v + nc[0] * w
+    ny = na[1] * u + nb[1] * v + nc[1] * w
+    nz = na[2] * u + nb[2] * v + nc[2] * w
+
+    normal = (nx, ny, nz)
+
+    intensity = dot(normal, render.lightX,render.lightY,render.lightZ)
+
+    b *= intensity
+    g *= intensity
+    r *= intensity
+
+    if (intensity >= 0.1 and intensity <= 0.4 and tax > 0.4 and tbx > 0.4 and tcx > 0.4 and tay > 0.5 and tby > 0.5 and tcy > 0.5):
+        return r*0.2, g*0.4, b*0
+
+
+    if intensity > 0:
+        return r, g, b
+    else:
+        return 0,0,0
 
 def phong (render, **kwargs):
     u, v, w = kwargs['baryCoords']
@@ -205,7 +282,6 @@ def phong (render, **kwargs):
         return r, g, b
     else:
         return 0, 0, 0
-
 
 def normalMap(render, **kwargs):
     Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz = kwargs['verts']
@@ -248,9 +324,9 @@ def normalMap(render, **kwargs):
 
         texNormal = div(texNormal, frobeniusNorm(texNormal))
 
-        # edge1 = B - A
+        # B - A
         edge1 = sub(B[0], A[0], B[1], A[1], B[2], A[2])
-        # edge2 = C - A
+        # C - A
         edge2 = sub(C[0], A[0], C[1], A[1], C[2], A[2])
         # tb - ta 
         deltaUV1 = sub2(tb[0], ta[0], tb[1], ta[1])
@@ -262,7 +338,6 @@ def normalMap(render, **kwargs):
         tangent[0] = f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0])
         tangent[1] = f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1])
         tangent[2] = f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2])
-        # tangent = tangent / np.linalg.norm(tangent)ç
         tangent = div(tangent, frobeniusNorm(tangent))
         tangent = div(tangent, frobeniusNorm(tangent))
         tangent = subVectors(tangent, multiply(dot(tangent, normal[0], normal[1], normal[2]), normal))
@@ -271,7 +346,7 @@ def normalMap(render, **kwargs):
         bitangent = cross(normal, tangent)
         bitangent = bitangent / frobeniusNorm(bitangent)
 
-        #para convertir de espacio global a espacio tangente
+
         tangentMatrix = [
             [tangent[0],bitangent[0],normal[0]],
             [tangent[1],bitangent[1],normal[1]],
@@ -279,10 +354,7 @@ def normalMap(render, **kwargs):
         ]
 
         light = render.light
-        # light = tangentMatrix @ light
         light = multiplyVM(light, tangentMatrix)
-
-        # light = light.tolist()[0]
         light = div(light, frobeniusNorm(light))
 
         intensity = dot(texNormal, light[0], light[1], light[2])

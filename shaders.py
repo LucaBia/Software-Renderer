@@ -285,14 +285,15 @@ def phong (render, **kwargs):
 
 def normalMap(render, **kwargs):
     Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz = kwargs['verts']
+    A, B, C = kwargs['vecVerts']
     u, v, w = kwargs['baryCoords']
     taX, tbX, tcX, taY, tbY, tcY = kwargs['texCoords']
     na, nb, nc = kwargs['normals']
     b, g ,r = kwargs['color']
 
-    A = (Ax, Ay, Az)
-    B = (Bx, By, Bz)
-    C = (Cx, Cy, Cz)
+    # A = (Ax, Ay, Az)
+    # B = (Bx, By, Bz)
+    # C = (Cx, Cy, Cz)
 
     ta = (taX, taY)
     tb = (tbX, tbY)

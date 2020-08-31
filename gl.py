@@ -334,7 +334,7 @@ class Render(object):
         transVertex = (transVertex[0] / transVertex[3],
                        transVertex[1] / transVertex[3],
                        transVertex[2] / transVertex[3])
-        # print(transVertex)
+        print(transVertex)
         return transVertex
 
     def dirTransform(self, vertex, vMatrix):
@@ -438,11 +438,11 @@ class Render(object):
             v1 = self.transform(v1, modelMatrix)
             v2 = self.transform(v2, modelMatrix)
 
-            Ax, Ay, Az = int(v0[0]), int(v1[0]), int(v2[0])
+            Ax, Bx, Cx = int(v0[0]), int(v1[0]), int(v2[0])
+            Ay, By, Cy = int(v0[1]), int(v1[1]), int(v2[1])
+            Az, Bz, Cz = int(v0[2]), int(v1[2]), int(v2[2])
             A = (Ax, Ay, Az)
-            Bx, By, Bz = int(v0[1]), int(v1[1]), int(v2[1])
             B = (Bx, By, Bz) 
-            Cx, Cy, Cz = int(v0[2]), int(v1[2]), int(v2[2])
             C = (Cx, Cy, Cz)
 
             v0 = self.camTransform(v0)
@@ -455,12 +455,10 @@ class Render(object):
                 v3 = model.vertices[face[3][0] - 1]
                 v3 = self.transform(v3, modelMatrix)
                 # D = v3
-                Aw = int(v3[0])
-                Bw = int(v3[1])
-                Cw = int(v3[2])
-                A = (Ax, Ay, Aw)
-                B = (Bx, By, Bw)
-                C = (Cx, Cy, Cw)
+                Dx = int(v3[0])
+                Dy = int(v3[1])
+                Dz = int(v3[2])
+                D = (Ax, By, Cz)
 
                 v3 = self.camTransform(v3)
 
@@ -493,9 +491,13 @@ class Render(object):
                 pass
 
 
-            self.triangle_bc(Ax, Ay, Az, Bx, By, Bz, Cx, Cy, Cz, vt0X, vt1X, vt2X, vt0Y, vt1Y, vt2Y, verts = (A, B, C), normals = (vn0, vn1, vn2))
+            self.triangle_bc(Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, vt0X, vt1X, vt2X, vt0Y, vt1Y, vt2Y, verts = (A, B, C), normals = (vn0, vn1, vn2))
             if vertCount > 3:
-                self.triangle_bc(Ax, Az, Aw, Bx, Bz, Bw, Cx, Cz, Cw, vt0X, vt2X, vt3X, vt0Y, vt2Y, vt3Y, verts = (A, B, W), normals = (vn0, vn2, vn3))
+                self.triangle_bc(Ax, Cx, Dx, Ay, Cy, Dy, Az, Cz, Dz, vt0X, vt2X, vt3X, vt0Y, vt2Y, vt3Y, verts = (A, B, D), normals = (vn0, vn2, vn3))
+
+            # self.triangle_bc(v0Tx, v1Tx, v2Tx, v0Ty, v1Ty, v2Ty, v0Tz, v1Tz, v2Tz, vt0X, vt1X, vt2X, vt0Y, vt1Y, vt2Y, verts = (A, B, C), normals = (vn0, vn1, vn2))
+            # if vertCount > 3:
+            #     self.triangle_bc(v0Tx, v2Tx, v0Tw, v0Ty, v2Ty, v1Tw, v0Tz, v2Tz, v2Tw, vt0X, vt2X, vt3X, vt0Y, vt2Y, vt3Y, verts = (A, B, D), normals = (vn0, vn2, vn3))
                  
 
      #Barycentric Coordinates
@@ -520,7 +522,7 @@ class Render(object):
                         r, g, b = self.active_shader(
                             self,
                             verts = (Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz),
-                            # verts = verts,
+                            vecVerts = verts,
                             baryCoords = (u, v, w),
                             texCoords = (taX, tbX, tcX, taY, tbY, tcY),
                             normals = normals,

@@ -11,10 +11,10 @@ bitmap = Render(3840, 2160)
 background = Texture('./background.bmp')
 bitmap.pixels = background.pixels
 
+# bitmap.lookAt((0, 0, -5), (2, 2, 0))
 
 bitmap.active_texture = Texture('./Models/Textures/Stormtrooper.bmp')
 bitmap.active_normalMap = Texture('./Models/Textures/Stormtrooper_N.bmp')
-bitmap.lookAt((1, 0, 5), (0,0,0))
 bitmap.active_shader = normalMap
 bitmap.loadObjModel('./Models/stormtrooper2.obj', (2600, 200, 0), (150, 150, 150), (0, -110, 0))
 
